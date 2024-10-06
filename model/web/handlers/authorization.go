@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"RentAny/model/dao"
 	"RentAny/model/database"
 	"RentAny/model/utils"
 	"github.com/dgrijalva/jwt-go"
@@ -123,7 +122,7 @@ func (uam *UserAccessManager) Login(c *gin.Context) {
 		return
 	}
 
-	var user *dao.User
+	var user *database.User
 
 	if loginCreds.Phone != "" {
 		user, err = userDAO.FindByPhone(loginCreds.Phone)
@@ -186,7 +185,7 @@ func (uam *UserAccessManager) Signup(c *gin.Context) {
 		return
 	}
 
-	var user dao.User
+	var user database.User
 	encryptedPassword, err := utils.HashPassword(signupCreds.Password)
 
 	if err != nil {
