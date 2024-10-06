@@ -10,6 +10,7 @@ type User struct {
 	Email        string `db:"email"`
 	PasswordHash string `db:"password_hash"`
 	Name         string `db:"name"`
+	Surname      string `db:"surname"`
 	PhoneNumber  string `db:"phone_number"`
 	CreatedAt    string `db:"created_at"`
 	UpdatedAt    string `db:"updated_at"`
@@ -29,7 +30,22 @@ func (dao *UserDAO) FindByEmail(email string) (*User, error) {
 	user := &User{}
 
 	query := `SELECT * FROM users WHERE email = $1`
+
 	err := dao.db.QueryRowx(query, email).StructScan(user)
+
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (dao *UserDAO) FindByPhone(phone string) (*User, error) {
+	user := &User{}
+
+	query := `SELECT * FROM users WHERE phone_number = $1`
+
+	err := dao.db.QueryRowx(query, phone).StructScan(user)
+
 	if err != nil {
 		return nil, err
 	}
@@ -38,12 +54,11 @@ func (dao *UserDAO) FindByEmail(email string) (*User, error) {
 
 // Create создает нового пользователя
 func (dao *UserDAO) Create(user *User) error {
-	query := `INSERT INTO Users (email, password_hash, name, phone_number) 
-              VALUES ($1, $2, $3, $4) RETURNING id`
-	return dao.db.QueryRowx(query, user.Email, user.PasswordHash, user.Name, user.PhoneNumber).Scan(&user.ID)
+	query := `INSERT INTO Users (email, password_hash, name, surname, phone_number) 
+              VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	return dao.db.QueryRowx(query, user.Email, user.PasswordHash, user.Name, user.Surname, user.PhoneNumber).Scan(&user.ID)
 }
 
-// GetByID получает пользователя по ID
 func (dao *UserDAO) GetByID(id int) (*User, error) {
 	user := &User{}
 	query := `SELECT * FROM Users WHERE id = $1`
@@ -52,14 +67,4 @@ func (dao *UserDAO) GetByID(id int) (*User, error) {
 		return nil, err
 	}
 	return user, nil
-}
-
-// GetAll получает всех пользователей
-func (dao *UserDAO) GetAll() ([]User, error) {
-	var users []User
-	err := dao.db.Select(&users, `SELECT * FROM Users`) // Используем sqlx.Select
-	if err != nil {
-		return nil, err
-	}
-	return users, nil
 }

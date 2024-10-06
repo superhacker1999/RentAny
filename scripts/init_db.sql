@@ -3,6 +3,7 @@ CREATE TABLE Users (
                        email VARCHAR(255) NOT NULL UNIQUE,
                        password_hash VARCHAR(255) NOT NULL,
                        name VARCHAR(255),
+                       surname VARCHAR(255),
                        phone_number VARCHAR(15),
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

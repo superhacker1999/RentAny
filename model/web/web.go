@@ -3,6 +3,7 @@ package web
 import (
 	"RentAny/model/web/handlers"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 )
 
@@ -13,13 +14,19 @@ func ProtectedEndpoint(c *gin.Context) {
 }
 
 func initEndpoints(r *gin.Engine) {
+	userAccessManager, err := handlers.NewUserAccessManager()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Маршрут для логина (получение JWT)
-	r.POST("/login", handlers.Login)
+	r.POST("/login", userAccessManager.Login)
 
 	// Защищённый маршрут
-	r.GET("/protected/greeting", handlers.ValidateJWT, ProtectedEndpoint)
+	r.GET("/protected/greeting", userAccessManager.ValidateJWT, ProtectedEndpoint)
 
-	r.POST("/sign-up", handlers.Signup)
+	r.POST("/sign-up", userAccessManager.Signup)
 }
 
 func Run() {

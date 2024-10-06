@@ -1,18 +1,25 @@
 package main
 
 import (
+	"RentAny/model/database"
 	"RentAny/model/web"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 	"log"
 )
 
 func main() {
-	connStr := "postgres://postgres:1234@localhost:5432/mydb12?sslmode=disable"
+	err := godotenv.Load()
 
-	db, err := sqlx.Open("pgx", connStr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error loading .env file : %v", err)
+	}
+
+	// initializes connection pool
+	db, err := database.GetConnectionPool()
+
+	if err != nil {
+		panic(err)
 	}
 	defer db.Close()
 

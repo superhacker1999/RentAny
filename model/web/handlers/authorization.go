@@ -2,21 +2,43 @@ package handlers
 
 import (
 	"RentAny/model/dao"
+	"RentAny/model/database"
+	"RentAny/model/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/jmoiron/sqlx"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
-	"regexp"
+	"os"
+	"strings"
 	"time"
 )
 
-var validate *validator.Validate
+type UserAccessManager struct {
+	validate       *validator.Validate
+	jwtKey         []byte
+	connectionPool *database.Database
+}
 
-// Секретный ключ для подписи JWT
-var jwtKey = []byte("my_secret_key")
+func NewUserAccessManager() (*UserAccessManager, error) {
+	userAccessManager := &UserAccessManager{}
+	var err error
+
+	userAccessManager.connectionPool, err = database.GetConnectionPool()
+
+	if err != nil {
+		return nil, err
+	}
+	userAccessManager.jwtKey = []byte(os.Getenv("JWT_KEY"))
+
+	userAccessManager.validate = validator.New()
+	userAccessManager.validate.RegisterValidation("pass-validation", utils.ValidatePassword)
+	userAccessManager.validate.RegisterValidation("phone-validation", utils.ValidatePhoneNumber)
+
+	userAccessManager.validate.RegisterStructValidation(utils.ValidateLoginCredentials, utils.LoginCredentials{})
+
+	return userAccessManager, nil
+}
 
 // Структура для хранения данных JWT
 type claims struct {
@@ -24,13 +46,8 @@ type claims struct {
 	jwt.StandardClaims
 }
 
-type credentials struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" validate:"pass-validation"`
-}
-
 // Функция для генерации JWT токена
-func generateJWT(email string) (string, error) {
+func (uam *UserAccessManager) generateJWT(email string) (string, error) {
 	expirationTime := time.Now().Add(15 * time.Minute)
 	claims := &claims{
 		Email: email,
@@ -41,29 +58,11 @@ func generateJWT(email string) (string, error) {
 
 	// Создание токена
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtKey)
-}
-
-func validatePassword(fl validator.FieldLevel) bool {
-	password := fl.Field().String()
-
-	if len(password) < 8 {
-		return false
-	}
-
-	rules := [4]string{"([a-z])+", "([A-Z])+", "([0-9])+", "([!@#$%^&*.?-])+"}
-
-	for _, rule := range rules {
-		if !regexp.MustCompile(rule).MatchString(password) {
-			return false
-		}
-	}
-
-	return true
+	return token.SignedString(uam.jwtKey)
 }
 
 // Функция для валидации JWT токена
-func ValidateJWT(c *gin.Context) {
+func (uam *UserAccessManager) ValidateJWT(c *gin.Context) {
 	tokenStr := c.GetHeader("Authorization")
 
 	if tokenStr == "" {
@@ -74,7 +73,7 @@ func ValidateJWT(c *gin.Context) {
 
 	claims := &claims{}
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
+		return uam.jwtKey, nil
 	})
 
 	if err != nil || !token.Valid {
@@ -88,37 +87,61 @@ func ValidateJWT(c *gin.Context) {
 }
 
 // Функция для логина (создание JWT токена)
-func Login(c *gin.Context) {
-	var creds credentials
+func (uam *UserAccessManager) Login(c *gin.Context) {
+	var loginCreds utils.LoginCredentials
 
-	if err := c.ShouldBindJSON(&creds); err != nil {
+	if err := c.ShouldBindJSON(&loginCreds); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-		return
-
-	}
-
-	connStr := "postgres://postgres:1234@localhost:5432/mydb12?sslmode=disable"
-
-	db, err := sqlx.Open("pgx", connStr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	userDAO := dao.NewUserDAO(db)
-
-	user, err := userDAO.FindByEmail(creds.Email)
-
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
-	}
-
-	if err := checkPassword(user.PasswordHash, creds.Password); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+		log.Println(err)
 		return
 	}
 
-	token, err := generateJWT(creds.Email)
+	if err := uam.validate.Struct(loginCreds); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		var errorMessages []string
+
+		for _, validationErr := range validationErrors {
+			errorMessages = append(errorMessages, validationErr.Error())
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": strings.Join(errorMessages, ", ")})
+		return
+	}
+
+	db, err := database.GetConnectionPool()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong"})
+		log.Println(err)
+		return
+	}
+
+	userDAO, err := db.GetUserDAO()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong"})
+		log.Println(err)
+		return
+	}
+
+	var user *dao.User
+
+	if loginCreds.Phone != "" {
+		user, err = userDAO.FindByPhone(loginCreds.Phone)
+	} else if loginCreds.Email != "" {
+		user, err = userDAO.FindByEmail(loginCreds.Email)
+	}
+
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid login or password"})
+		return
+	}
+
+	if err := utils.CheckPassword(user.PasswordHash, loginCreds.Password); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid login or password"})
+		return
+	}
+
+	token, err := uam.generateJWT(loginCreds.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
@@ -127,39 +150,29 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
-func checkPassword(hashedPassword, password string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-}
+func (uam *UserAccessManager) Signup(c *gin.Context) {
+	db, err := database.GetConnectionPool()
 
-func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", err
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong"})
+		log.Println(err)
 	}
-	return string(bytes), nil
-}
 
-func Signup(c *gin.Context) {
-	connStr := "postgres://postgres:1234@localhost:5432/mydb12?sslmode=disable"
+	userDAO, err := db.GetUserDAO()
 
-	db, err := sqlx.Open("pgx", connStr)
 	if err != nil {
-		log.Fatal(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong"})
+		log.Println(err)
 	}
-	defer db.Close()
 
-	userDAO := dao.NewUserDAO(db)
+	var signupCreds utils.SignupCredentials
 
-	var creds credentials
-	validate = validator.New()
-	validate.RegisterValidation("pass-validation", validatePassword)
-
-	if err := c.ShouldBindJSON(&creds); err != nil /*|| creds.Email != "user" || creds.Password != "password"*/ {
+	if err := c.ShouldBindJSON(&signupCreds); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	if err := validate.Struct(creds); err != nil {
+	if err := uam.validate.Struct(signupCreds); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
 		var errorMessages []string
 
@@ -174,15 +187,27 @@ func Signup(c *gin.Context) {
 	}
 
 	var user dao.User
-	encryptedPassword, err := hashPassword(creds.Password)
+	encryptedPassword, err := utils.HashPassword(signupCreds.Password)
 
-	user.Email = creds.Email
-	user.PasswordHash = encryptedPassword
-	err = userDAO.Create(&user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user : " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong"})
+		log.Println(err)
+		return
+	}
+
+	user.Name = signupCreds.Name
+	user.Surname = signupCreds.Surname
+	user.PhoneNumber = signupCreds.Phone
+	user.Email = signupCreds.Email
+	user.PasswordHash = encryptedPassword
+
+	err = userDAO.Create(&user)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		log.Println(err)
 		return
 	} else {
-		c.JSON(http.StatusCreated, gin.H{"Now I know you, ": user.Email})
+		c.JSON(http.StatusCreated, gin.H{"You're successfully registered, ": user.Name})
 	}
 }
