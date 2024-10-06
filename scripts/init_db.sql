@@ -2,9 +2,9 @@ CREATE TABLE Users (
                        id SERIAL PRIMARY KEY,
                        email VARCHAR(255) NOT NULL UNIQUE,
                        password_hash VARCHAR(255) NOT NULL,
-                       name VARCHAR(255),
-                       surname VARCHAR(255),
-                       phone_number VARCHAR(15),
+                       name VARCHAR(255) NOT NULL,
+                       surname VARCHAR(255) NOT NULL,
+                       phone_number VARCHAR(15) NOT NULL UNIQUE,
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -21,7 +21,7 @@ CREATE TABLE Items (
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-m
+
 CREATE TABLE Bookings (
                           id SERIAL PRIMARY KEY,
                           item_id INTEGER REFERENCES Items(id) ON DELETE CASCADE,

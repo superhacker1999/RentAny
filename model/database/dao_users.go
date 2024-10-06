@@ -22,7 +22,7 @@ type UserDAO struct {
 }
 
 // NewUserDAO создает новый экземпляр UserDAO
-func NewUserDAO(db *sqlx.DB) *UserDAO {
+func newUserDAO(db *sqlx.DB) *UserDAO {
 	return &UserDAO{db: db}
 }
 

@@ -1,7 +1,6 @@
-package database
+package dao
 
 import (
-	"RentAny/model/dao"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"os"
@@ -12,7 +11,11 @@ var singleConnectionPool *sqlx.DB
 
 type Database struct {
 	db      *sqlx.DB
-	userDAO *dao.UserDAO
+	userDAO *UserDAO
+}
+
+func (db *Database) initDAOs() {
+	db.userDAO = newUserDAO(db.db)
 }
 
 // returns pointer to singleton connection pool
@@ -21,7 +24,7 @@ func GetConnectionPool() (*Database, error) {
 
 	if singleConnectionPool != nil {
 		database.db = singleConnectionPool
-		database.userDAO = dao.NewUserDAO(database.db)
+		database.initDAOs()
 		return database, nil
 	}
 
@@ -46,7 +49,7 @@ func GetConnectionPool() (*Database, error) {
 	singleConnectionPool.SetConnMaxIdleTime(1 * time.Second)
 
 	database.db = singleConnectionPool
-	database.userDAO = dao.NewUserDAO(database.db)
+	database.initDAOs()
 	return database, nil
 }
 
@@ -54,7 +57,7 @@ func (db *Database) Close() {
 	db.db.Close()
 }
 
-func (db *Database) GetUserDAO() (*dao.UserDAO, error) {
+func (db *Database) GetUserDAO() (*UserDAO, error) {
 	if db.userDAO != nil {
 		return db.userDAO, nil
 	}
