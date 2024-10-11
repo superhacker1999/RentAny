@@ -41,15 +41,14 @@ func NewUserAccessManager() (*UserAccessManager, error) {
 
 // Структура для хранения данных JWT
 type claims struct {
-	Email string `json:"email"`
+	UserID int `json:"user_id"`
 	jwt.StandardClaims
 }
 
-// Функция для генерации JWT токена
-func (uam *UserAccessManager) generateJWT(email string) (string, error) {
+func (uam *UserAccessManager) generateJWT(userID int) (string, error) {
 	expirationTime := time.Now().Add(15 * time.Minute)
 	claims := &claims{
-		Email: email,
+		UserID: userID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
@@ -60,8 +59,8 @@ func (uam *UserAccessManager) generateJWT(email string) (string, error) {
 	return token.SignedString(uam.jwtKey)
 }
 
-// Функция для валидации JWT токена
-func (uam *UserAccessManager) ValidateJWT(c *gin.Context) {
+// Validates JWT token sent by user
+func (uam *UserAccessManager) AuthorizationMiddleware(c *gin.Context) {
 	tokenStr := c.GetHeader("Authorization")
 
 	if tokenStr == "" {
@@ -81,7 +80,8 @@ func (uam *UserAccessManager) ValidateJWT(c *gin.Context) {
 		return
 	}
 
-	c.Set("email", claims.Email)
+	c.Set("user_id", claims.UserID)
+
 	c.Next()
 }
 
@@ -140,7 +140,7 @@ func (uam *UserAccessManager) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := uam.generateJWT(loginCreds.Email)
+	token, err := uam.generateJWT(user.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return

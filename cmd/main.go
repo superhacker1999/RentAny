@@ -15,7 +15,7 @@ func main() {
 		log.Fatalf("Error loading .env file : %v", err)
 	}
 
-	// initializes connection pool
+	// TODO : change call of this method to initialization method
 	db, err := database.GetConnectionPool()
 
 	if err != nil {
