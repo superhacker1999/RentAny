@@ -14,7 +14,7 @@ CREATE TABLE Items (
                        user_id INTEGER REFERENCES Users(id) ON DELETE CASCADE,
                        title VARCHAR(255) NOT NULL,
                        description TEXT,
-                       price_per_day DECIMAL(10, 2) NOT NULL,
+                       price_per_hour DECIMAL(10, 2) NOT NULL,
                        category VARCHAR(255),
                        available BOOLEAN DEFAULT TRUE,
                        location VARCHAR(255),

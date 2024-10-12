@@ -1,20 +1,9 @@
-package database
+package postgres
 
 import (
+	"RentAny/internal/types"
 	"github.com/jmoiron/sqlx"
 )
-
-// User представляет структуру пользователя с тегами для sqlx
-type User struct {
-	ID           int    `db:"id"`
-	Email        string `db:"email"`
-	PasswordHash string `db:"password_hash"`
-	Name         string `db:"name"`
-	Surname      string `db:"surname"`
-	PhoneNumber  string `db:"phone_number"`
-	CreatedAt    string `db:"created_at"`
-	UpdatedAt    string `db:"updated_at"`
-}
 
 // UserDAO предоставляет методы для работы с пользователями
 type UserDAO struct {
@@ -26,8 +15,8 @@ func newUserDAO(db *sqlx.DB) *UserDAO {
 	return &UserDAO{db: db}
 }
 
-func (dao *UserDAO) FindByEmail(email string) (*User, error) {
-	user := &User{}
+func (dao *UserDAO) FindByEmail(email string) (*types.UserRepository, error) {
+	user := &types.UserRepository{}
 
 	query := `SELECT * FROM users WHERE email = $1`
 
@@ -39,8 +28,8 @@ func (dao *UserDAO) FindByEmail(email string) (*User, error) {
 	return user, nil
 }
 
-func (dao *UserDAO) FindByPhone(phone string) (*User, error) {
-	user := &User{}
+func (dao *UserDAO) FindByPhone(phone string) (*types.UserRepository, error) {
+	user := &types.UserRepository{}
 
 	query := `SELECT * FROM users WHERE phone_number = $1`
 
@@ -53,14 +42,14 @@ func (dao *UserDAO) FindByPhone(phone string) (*User, error) {
 }
 
 // Create создает нового пользователя
-func (dao *UserDAO) Create(user *User) error {
+func (dao *UserDAO) Create(user *types.UserRepository) error {
 	query := `INSERT INTO Users (email, password_hash, name, surname, phone_number) 
               VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	return dao.db.QueryRowx(query, user.Email, user.PasswordHash, user.Name, user.Surname, user.PhoneNumber).Scan(&user.ID)
 }
 
-func (dao *UserDAO) GetByID(id int) (*User, error) {
-	user := &User{}
+func (dao *UserDAO) GetByID(id int) (*types.UserRepository, error) {
+	user := &types.UserRepository{}
 	query := `SELECT * FROM Users WHERE id = $1`
 	err := dao.db.Get(user, query, id) // Используем sqlx.Get
 	if err != nil {

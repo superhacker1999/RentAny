@@ -1,8 +1,8 @@
 package main
 
 import (
-	"RentAny/model/database"
-	"RentAny/model/web"
+	"RentAny/internal/controller"
+	"RentAny/internal/repository/postgres"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"log"
@@ -16,12 +16,12 @@ func main() {
 	}
 
 	// TODO : change call of this method to initialization method
-	db, err := database.GetConnectionPool()
+	db, err := postgres.GetConnectionPool()
 
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
-	web.Run()
+	server.Run()
 }

@@ -1,4 +1,4 @@
-package database
+package postgres
 
 import (
 	"fmt"
@@ -16,6 +16,8 @@ type Database struct {
 
 func (db *Database) initDAOs() {
 	db.userDAO = newUserDAO(db.db)
+
+	// add new DAOs here
 }
 
 // returns pointer to singleton connection pool

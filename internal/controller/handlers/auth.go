@@ -3,7 +3,7 @@ package handlers
 import (
 	"RentAny/internal/controller/utils"
 	"RentAny/internal/repository/postgres"
-	"RentAny/internal/repository/postgres/user"
+	"RentAny/internal/types"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 )
+
+// TODO move business logic into separated package
 
 type UserAccessManager struct {
 	validate       *validator.Validate
@@ -35,7 +37,7 @@ func NewUserAccessManager() (*UserAccessManager, error) {
 	userAccessManager.validate.RegisterValidation("pass-validation", utils.ValidatePassword)
 	userAccessManager.validate.RegisterValidation("phone-validation", utils.ValidatePhoneNumber)
 
-	userAccessManager.validate.RegisterStructValidation(utils.ValidateLoginCredentials, utils.LoginCredentials{})
+	userAccessManager.validate.RegisterStructValidation(utils.ValidateLoginCredentials, types.LoginCredentials{})
 
 	return userAccessManager, nil
 }
@@ -88,7 +90,7 @@ func (uam *UserAccessManager) AuthorizationMiddleware(c *gin.Context) {
 
 // Функция для логина (создание JWT токена)
 func (uam *UserAccessManager) Login(c *gin.Context) {
-	var loginCreds utils.LoginCredentials
+	var loginCreds types.LoginCredentials
 
 	if err := c.ShouldBindJSON(&loginCreds); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
@@ -123,7 +125,7 @@ func (uam *UserAccessManager) Login(c *gin.Context) {
 		return
 	}
 
-	var user *user.User
+	var user *types.UserRepository
 
 	if loginCreds.Phone != "" {
 		user, err = userDAO.FindByPhone(loginCreds.Phone)
@@ -165,7 +167,7 @@ func (uam *UserAccessManager) Signup(c *gin.Context) {
 		log.Println(err)
 	}
 
-	var signupCreds utils.SignupCredentials
+	var signupCreds types.SignupCredentials
 
 	if err := c.ShouldBindJSON(&signupCreds); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -186,7 +188,7 @@ func (uam *UserAccessManager) Signup(c *gin.Context) {
 		return
 	}
 
-	var user user.User
+	var user types.UserRepository
 	encryptedPassword, err := utils.HashPassword(signupCreds.Password)
 
 	if err != nil {
