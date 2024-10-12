@@ -12,11 +12,12 @@ var singleConnectionPool *sqlx.DB
 type Database struct {
 	db      *sqlx.DB
 	userDAO *UserDAO
+	itemDAO *ItemDAO
 }
 
 func (db *Database) initDAOs() {
 	db.userDAO = newUserDAO(db.db)
-
+	db.itemDAO = NewItemDAO(db.db)
 	// add new DAOs here
 }
 

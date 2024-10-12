@@ -36,7 +36,7 @@ func Greeting(c *gin.Context) {
 }
 
 func initEndpoints(r *gin.Engine) {
-	userAccessManager, err := handlers.NewUserAccessManager()
+	userAccessManager, err := handlers.NewUserAccessHandler()
 
 	if err != nil {
 		log.Fatal(err)
