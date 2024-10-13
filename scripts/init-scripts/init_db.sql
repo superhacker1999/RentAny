@@ -1,4 +1,4 @@
-CREATE TABLE Users (
+CREATE TABLE IF NOT EXISTS Users(
                        id SERIAL PRIMARY KEY,
                        email VARCHAR(255) NOT NULL UNIQUE,
                        password_hash VARCHAR(255) NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE Users (
                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE Items (
+CREATE TABLE IF NOT EXISTS Items (
                        id SERIAL PRIMARY KEY,
                        user_id INTEGER REFERENCES Users(id) ON DELETE CASCADE,
                        title VARCHAR(255) NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE Items (
                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE Bookings (
+CREATE TABLE IF NOT EXISTS Bookings (
                           id SERIAL PRIMARY KEY,
                           item_id INTEGER REFERENCES Items(id) ON DELETE CASCADE,
                           user_id INTEGER REFERENCES Users(id) ON DELETE CASCADE,

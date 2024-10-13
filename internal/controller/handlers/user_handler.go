@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"RentAny/internal/services"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"net/http"
@@ -52,10 +53,20 @@ func (u *UserHandler) GetUserByID(c *gin.Context) {
 
 }
 
+func getSmth() (string, int) {
+	return "hello", 1
+}
+
 func (u *UserHandler) GetUserByItem(c *gin.Context) {
 	type userRequest struct {
 		ItemID int `json:"item_id" binding:"required"`
 	}
+
+	var str string
+
+	str, num := getSmth()
+
+	fmt.Println(str, num)
 
 	ur := userRequest{}
 
