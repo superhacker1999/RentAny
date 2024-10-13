@@ -24,6 +24,13 @@ type UserRepository struct {
 	UpdatedAt    string `db:"updated_at"`
 }
 
+type UserDTO struct {
+	Name        string `json:"name"`
+	Surname     string `json:"surname"`
+	PhotoURL    string `json:"photo_url"`
+	PhoneNumber string `json:"phone_number"`
+}
+
 type LoginCredentials struct {
 	Email    string `json:"email" binding:"omitempty,email"`
 	Phone    string `json:"phone" binding:"omitempty"`
@@ -36,4 +43,14 @@ type SignupCredentials struct {
 	Phone    string `json:"phone" validate:"phone-validation"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" validate:"pass-validation"`
+}
+
+func UserRepoToUserDTO(user *UserRepository) *UserDTO {
+	userDTO := &UserDTO{
+		Name:        user.Name,
+		Surname:     user.Surname,
+		PhotoURL:    "",
+		PhoneNumber: user.PhoneNumber,
+	}
+	return userDTO
 }

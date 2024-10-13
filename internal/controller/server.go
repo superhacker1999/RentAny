@@ -2,61 +2,35 @@ package server
 
 import (
 	"RentAny/internal/controller/handlers"
-	"RentAny/internal/repository/postgres"
 	"github.com/gin-gonic/gin"
 	"log"
-	"net/http"
 )
 
-func Greeting(c *gin.Context) {
-	db, err := postgres.GetConnectionPool()
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	userDAO, err := db.GetUserDAO()
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	userID := c.GetInt("user_id")
-
-	user, err := userDAO.GetByID(userID)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Hello, " + user.Name})
-}
-
 func initEndpoints(r *gin.Engine) {
-	userAccessManager, err := handlers.NewUserAccessHandler()
+	userAccessHandler, err := handlers.NewUserAccessHandler()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Маршрут для логина (получение JWT)
-	r.POST("/login", userAccessManager.Login)
+	userHandler, err := handlers.NewUserHandler()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r.POST("/login", userAccessHandler.Login)
+	r.POST("/sign-up", userAccessHandler.Signup)
 
 	authGroup := r.Group("/auth")
 	{
-		authGroup.Use(userAccessManager.AuthorizationMiddleware)
-		authGroup.GET("/greeting", Greeting)
+		authGroup.Use(userAccessHandler.AuthorizationMiddleware)
+		authGroup.GET("/get-user-by-id", userHandler.GetUserByID)
+		authGroup.GET("/get-user-by-item-id", userHandler.GetUserByID)
 
 		// add new protected endpoints here
 	}
 
-	// Защищённый маршрут
-	//r.GET("/protected/greeting", userAccessManager.ValidateJWT, ProtectedEndpoint)
-
-	r.POST("/sign-up", userAccessManager.Signup)
 }
 
 func Run() {

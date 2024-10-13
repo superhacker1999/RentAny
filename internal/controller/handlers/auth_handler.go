@@ -11,10 +11,6 @@ import (
 	"strings"
 )
 
-// TODO move business logic into separated package
-
-var val *validator.Validate
-
 type UserAccessHandler struct {
 	validate    *validator.Validate
 	authService *services.AuthService
