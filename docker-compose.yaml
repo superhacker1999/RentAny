@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  minio:
+    restart: always
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ACCESS_KEY: ERHZ5oGE26NoUjzmQHCZf1tovoHyVpd0
+      MINIO_SECRET_KEY: GLZiGmQYwFsY1L32E11dkD3DOrNdvNeO
+    command: server --address ":9000" --console-address ":9001" /export
+    volumes:
+      - miniodata:/export
+      - minioconfig:/root/.minio
+
   postgres:
     image: postgres:latest
     restart: always
@@ -20,8 +34,11 @@ services:
       dockerfile: scripts/docker/Dockerfile
     depends_on:
       - postgres
+      - minio
     ports:
       - "8080:8080"
 
 volumes:
   pgdata:
+  miniodata:
+  minioconfig:

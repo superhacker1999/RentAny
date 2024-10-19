@@ -2,11 +2,13 @@ package services
 
 import (
 	"RentAny/internal/controller/utils"
+	"RentAny/internal/repository/minio"
 	"RentAny/internal/repository/postgres"
 	"RentAny/internal/types"
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"time"
@@ -21,6 +23,7 @@ type jwtClaims struct {
 type AuthService struct {
 	jwtKey         []byte
 	connectionPool *postgres.Database
+	s3Client       *minio.Database
 }
 
 func NewAuthService() (*AuthService, error) {
@@ -32,6 +35,13 @@ func NewAuthService() (*AuthService, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	authService.s3Client, err = minio.GetConnection()
+
+	if err != nil {
+		log.Println(err)
+		// not getting minio connection is bad, but not critical
 	}
 
 	return authService, nil
@@ -102,7 +112,7 @@ func (a *AuthService) Login(creds types.LoginCredentials) (token string, status 
 	return token, http.StatusOK, nil
 }
 
-func (a *AuthService) Signup(creds types.SignupCredentials) (status int, err error) {
+func (a *AuthService) Signup(creds types.SignupCredentials, file multipart.File, fileHeader *multipart.FileHeader) (status int, err error) {
 	userDAO, err := a.connectionPool.GetUserDAO()
 
 	if err != nil {
@@ -116,6 +126,21 @@ func (a *AuthService) Signup(creds types.SignupCredentials) (status int, err err
 	if err != nil {
 		log.Println(err)
 		return http.StatusInternalServerError, errors.New("internal server error")
+	}
+
+	if fileHeader != nil && fileHeader != nil {
+		fileHeader.Filename, err = utils.GenerateUniqueFileName(fileHeader.Filename)
+
+		if err != nil {
+			log.Println(err)
+		} else {
+			err = a.s3Client.PutObject(file, fileHeader)
+			if err != nil {
+				log.Println("Error uploading profile pic : " + err.Error())
+			}
+
+			user.ProfilePic = fileHeader.Filename
+		}
 	}
 
 	user.Name = creds.Name

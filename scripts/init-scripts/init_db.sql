@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS Users(
                        name VARCHAR(255) NOT NULL,
                        surname VARCHAR(255) NOT NULL,
                        phone_number VARCHAR(15) NOT NULL UNIQUE,
+                       profile_pic VARCHAR(255),
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

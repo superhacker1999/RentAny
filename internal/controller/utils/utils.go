@@ -2,11 +2,28 @@ package utils
 
 import (
 	"RentAny/internal/types"
+	"fmt"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
+
+func GenerateUniqueFileName(originalFileName string) (string, error) {
+	newUUID, err := uuid.NewRandom()
+
+	if err != nil {
+		return "", fmt.Errorf("failed to generate uuid: %w", err)
+	}
+
+	fileExtension := filepath.Ext(originalFileName)
+
+	newFileName := newUUID.String() + fileExtension
+
+	return newFileName, nil
+}
 
 func ValidatePhoneNumber(fl validator.FieldLevel) bool {
 	phone := fl.Field().String()

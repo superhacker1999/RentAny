@@ -20,6 +20,7 @@ type UserRepository struct {
 	Name         string `db:"name"`
 	Surname      string `db:"surname"`
 	PhoneNumber  string `db:"phone_number"`
+	ProfilePic   string `db:"profile_pic"`
 	CreatedAt    string `db:"created_at"`
 	UpdatedAt    string `db:"updated_at"`
 }

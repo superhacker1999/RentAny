@@ -110,7 +110,15 @@ func (uah *UserAccessHandler) Signup(c *gin.Context) {
 		return
 	}
 
-	status, err := uah.authService.Signup(signupCreds)
+	var status int
+
+	file, fileHeader, err := c.Request.FormFile("profile_pic")
+
+	if err != nil {
+		status, err = uah.authService.Signup(signupCreds, file, fileHeader)
+	} else {
+		status, err = uah.authService.Signup(signupCreds, nil, nil)
+	}
 
 	if err != nil {
 		c.JSON(status, gin.H{"error": err.Error()})

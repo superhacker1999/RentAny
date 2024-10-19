@@ -43,9 +43,9 @@ func (dao *UserDAO) FindByPhone(phone string) (*types.UserRepository, error) {
 
 // Create создает нового пользователя
 func (dao *UserDAO) Create(user *types.UserRepository) error {
-	query := `INSERT INTO users (email, password_hash, name, surname, phone_number) 
+	query := `INSERT INTO users (email, password_hash, name, surname, phone_number, profile_pic) 
               VALUES ($1, $2, $3, $4, $5) RETURNING id`
-	return dao.db.QueryRowx(query, user.Email, user.PasswordHash, user.Name, user.Surname, user.PhoneNumber).Scan(&user.ID)
+	return dao.db.QueryRowx(query, user.Email, user.PasswordHash, user.Name, user.Surname, user.PhoneNumber, user.ProfilePic).Scan(&user.ID)
 }
 
 func (dao *UserDAO) GetByID(id int) (*types.UserRepository, error) {
