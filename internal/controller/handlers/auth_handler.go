@@ -88,6 +88,25 @@ func (uah *UserAccessHandler) Login(c *gin.Context) {
 	c.JSON(status, gin.H{"token": token})
 }
 
+func (uah *UserAccessHandler) UploadProfilePic(c *gin.Context) {
+	file, fileHeader, err := c.Request.FormFile("profile_pic")
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, _ := c.Get("user_id")
+
+	status, err := uah.authService.UploadProfilePic(userID.(int), file, fileHeader)
+
+	if err != nil {
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(status, gin.H{"status": "success"})
+}
+
 func (uah *UserAccessHandler) Signup(c *gin.Context) {
 	var signupCreds types.SignupCredentials
 
@@ -110,15 +129,7 @@ func (uah *UserAccessHandler) Signup(c *gin.Context) {
 		return
 	}
 
-	var status int
-
-	file, fileHeader, err := c.Request.FormFile("profile_pic")
-
-	if err != nil {
-		status, err = uah.authService.Signup(signupCreds, file, fileHeader)
-	} else {
-		status, err = uah.authService.Signup(signupCreds, nil, nil)
-	}
+	status, err := uah.authService.Signup(signupCreds)
 
 	if err != nil {
 		c.JSON(status, gin.H{"error": err.Error()})

@@ -28,15 +28,15 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./scripts/init-scripts:/docker-entrypoint-initdb.d
 
-  app:
-    build:
-      context: .
-      dockerfile: scripts/docker/Dockerfile
-    depends_on:
-      - postgres
-      - minio
-    ports:
-      - "8080:8080"
+#  app:
+#    build:
+#      context: .
+#      dockerfile: scripts/docker/Dockerfile
+#    depends_on:
+#      - postgres
+#      - minio
+#    ports:
+#      - "8080:8080"
 
 volumes:
   pgdata:

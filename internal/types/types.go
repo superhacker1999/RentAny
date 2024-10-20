@@ -1,5 +1,7 @@
 package types
 
+import "database/sql"
+
 type ItemRepository struct {
 	ID        int    `db:"id"`
 	UserID    int    `db:"user_id"`
@@ -14,15 +16,15 @@ type ItemRepository struct {
 }
 
 type UserRepository struct {
-	ID           int    `db:"id"`
-	Email        string `db:"email"`
-	PasswordHash string `db:"password_hash"`
-	Name         string `db:"name"`
-	Surname      string `db:"surname"`
-	PhoneNumber  string `db:"phone_number"`
-	ProfilePic   string `db:"profile_pic"`
-	CreatedAt    string `db:"created_at"`
-	UpdatedAt    string `db:"updated_at"`
+	ID           int            `db:"id"`
+	Email        string         `db:"email"`
+	PasswordHash string         `db:"password_hash"`
+	Name         string         `db:"name"`
+	Surname      string         `db:"surname"`
+	PhoneNumber  string         `db:"phone_number"`
+	ProfilePic   sql.NullString `db:"profile_pic"`
+	CreatedAt    string         `db:"created_at"`
+	UpdatedAt    string         `db:"updated_at"`
 }
 
 type UserDTO struct {

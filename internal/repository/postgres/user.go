@@ -15,6 +15,14 @@ func newUserDAO(db *sqlx.DB) *UserDAO {
 	return &UserDAO{db: db}
 }
 
+func (dao *UserDAO) AddProfilePic(user *types.UserRepository) error {
+	query := `UPDATE users SET profile_pic = $1 WHERE id = $2;`
+
+	_, err := dao.db.Exec(query, user.ProfilePic, user.ID)
+
+	return err
+}
+
 func (dao *UserDAO) FindByEmail(email string) (*types.UserRepository, error) {
 	user := &types.UserRepository{}
 
@@ -43,9 +51,9 @@ func (dao *UserDAO) FindByPhone(phone string) (*types.UserRepository, error) {
 
 // Create создает нового пользователя
 func (dao *UserDAO) Create(user *types.UserRepository) error {
-	query := `INSERT INTO users (email, password_hash, name, surname, phone_number, profile_pic) 
+	query := `INSERT INTO users (email, password_hash, name, surname, phone_number) 
               VALUES ($1, $2, $3, $4, $5) RETURNING id`
-	return dao.db.QueryRowx(query, user.Email, user.PasswordHash, user.Name, user.Surname, user.PhoneNumber, user.ProfilePic).Scan(&user.ID)
+	return dao.db.QueryRowx(query, user.Email, user.PasswordHash, user.Name, user.Surname, user.PhoneNumber).Scan(&user.ID)
 }
 
 func (dao *UserDAO) GetByID(id int) (*types.UserRepository, error) {

@@ -27,6 +27,7 @@ func initEndpoints(r *gin.Engine) {
 		authGroup.Use(userAccessHandler.AuthorizationMiddleware)
 		authGroup.GET("/get-user-by-id", userHandler.GetUserByID)
 		authGroup.GET("/get-user-by-item-id", userHandler.GetUserByID)
+		authGroup.POST("/upload/profile-pic", userAccessHandler.UploadProfilePic)
 
 		// add new protected endpoints here
 	}
@@ -38,5 +39,5 @@ func Run() {
 
 	initEndpoints(r)
 
-	r.Run(":8081")
+	r.Run(":8080")
 }

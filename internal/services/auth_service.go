@@ -5,6 +5,7 @@ import (
 	"RentAny/internal/repository/minio"
 	"RentAny/internal/repository/postgres"
 	"RentAny/internal/types"
+	"database/sql"
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"log"
@@ -112,7 +113,43 @@ func (a *AuthService) Login(creds types.LoginCredentials) (token string, status 
 	return token, http.StatusOK, nil
 }
 
-func (a *AuthService) Signup(creds types.SignupCredentials, file multipart.File, fileHeader *multipart.FileHeader) (status int, err error) {
+func (a *AuthService) UploadProfilePic(userID int, file multipart.File, fileHeader *multipart.FileHeader) (status int, err error) {
+	if fileHeader != nil && fileHeader != nil {
+		fileHeader.Filename, err = utils.GenerateUniqueFileName(fileHeader.Filename)
+
+		if err != nil {
+			log.Println("Error generating file name : ", err.Error())
+			return http.StatusInternalServerError, errors.New("Failed to upload profile pic")
+		} else {
+			err = a.s3Client.PutObject(file, fileHeader)
+			if err != nil {
+				log.Println("Error uploading profile pic : " + err.Error())
+				return http.StatusInternalServerError, errors.New("Failed to upload profile pic")
+			}
+			user := &types.UserRepository{}
+			user.ID = userID
+			user.ProfilePic = sql.NullString{fileHeader.Filename, true}
+
+			userDAO, err := a.connectionPool.GetUserDAO()
+
+			if err != nil {
+				log.Println(err)
+				return http.StatusInternalServerError, errors.New("Failed to upload profile pic")
+			}
+			err = userDAO.AddProfilePic(user)
+
+			if err != nil {
+				log.Println(err)
+				return http.StatusInternalServerError, errors.New("Failed to upload profile pic")
+			}
+			return http.StatusOK, nil
+		}
+	} else {
+		return http.StatusBadRequest, errors.New("File missing")
+	}
+}
+
+func (a *AuthService) Signup(creds types.SignupCredentials) (status int, err error) {
 	userDAO, err := a.connectionPool.GetUserDAO()
 
 	if err != nil {
@@ -126,21 +163,6 @@ func (a *AuthService) Signup(creds types.SignupCredentials, file multipart.File,
 	if err != nil {
 		log.Println(err)
 		return http.StatusInternalServerError, errors.New("internal server error")
-	}
-
-	if fileHeader != nil && fileHeader != nil {
-		fileHeader.Filename, err = utils.GenerateUniqueFileName(fileHeader.Filename)
-
-		if err != nil {
-			log.Println(err)
-		} else {
-			err = a.s3Client.PutObject(file, fileHeader)
-			if err != nil {
-				log.Println("Error uploading profile pic : " + err.Error())
-			}
-
-			user.ProfilePic = fileHeader.Filename
-		}
 	}
 
 	user.Name = creds.Name
