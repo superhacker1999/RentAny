@@ -1,16 +1,19 @@
 package services
 
 import (
+	"RentAny/internal/repository/minio"
 	"RentAny/internal/repository/postgres"
 	"RentAny/internal/types"
 	"database/sql"
 	"errors"
 	"log"
 	"net/http"
+	"time"
 )
 
 type UserService struct {
 	connectionPool *postgres.Database
+	s3Client       *minio.Database
 }
 
 func NewUserService() (*UserService, error) {
@@ -22,6 +25,13 @@ func NewUserService() (*UserService, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	userService.s3Client, err = minio.GetConnection()
+
+	if err != nil {
+		return nil, err
+	}
+
 	return userService, nil
 }
 
@@ -41,6 +51,16 @@ func (u *UserService) GetUserByID(id int) (*types.UserDTO, int, error) {
 			return nil, http.StatusNotFound, errors.New("user not found")
 		}
 		return nil, http.StatusInternalServerError, errors.New("couldn't get user due to internal error")
+	}
+
+	if user.ProfilePic.Valid {
+		url, err := u.s3Client.GetPresignedURL(user.ProfilePic.String, 5*time.Minute)
+
+		if err != nil {
+			// not that critical, continue
+			log.Println(err)
+		}
+		user.ProfilePic = sql.NullString{String: url, Valid: true}
 	}
 
 	return types.UserRepoToUserDTO(user), http.StatusOK, nil

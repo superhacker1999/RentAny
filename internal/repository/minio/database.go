@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/url"
 	"os"
+	"time"
 )
 
 type Resolver struct {
@@ -48,13 +49,30 @@ func GetConnection() (*Database, error) {
 	return db, nil
 }
 
+func (db *Database) GetPresignedURL(key string, duration time.Duration) (string, error) {
+	presignedClient := s3.NewPresignClient(db.client)
+
+	req, err := presignedClient.PresignGetObject(context.TODO(), &s3.GetObjectInput{
+		Bucket: aws.String(db.creds.bucket),
+		Key:    aws.String(key),
+	}, s3.WithPresignExpires(duration))
+
+	if err != nil {
+		log.Println(err)
+		return "", errors.New("Could not generate URL")
+	}
+	return req.URL, nil
+}
+
 func (db *Database) PutObject(file multipart.File, fileHeader *multipart.FileHeader) error {
 	fileSize := fileHeader.Size
 	fileName := fileHeader.Filename
 
+	userProfilePrefix := "profile_pics/"
+
 	_, err := db.client.PutObject(context.TODO(), &s3.PutObjectInput{
 		Bucket:        aws.String(db.creds.bucket),
-		Key:           aws.String(fileName),
+		Key:           aws.String(userProfilePrefix + fileName),
 		Body:          file,
 		ContentLength: aws.Int64(fileSize),
 	})

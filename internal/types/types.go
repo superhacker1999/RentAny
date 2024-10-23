@@ -52,7 +52,7 @@ func UserRepoToUserDTO(user *UserRepository) *UserDTO {
 	userDTO := &UserDTO{
 		Name:        user.Name,
 		Surname:     user.Surname,
-		PhotoURL:    "",
+		PhotoURL:    user.ProfilePic.String,
 		PhoneNumber: user.PhoneNumber,
 	}
 	return userDTO
